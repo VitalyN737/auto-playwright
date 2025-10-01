@@ -4,132 +4,120 @@ Run Playwright tests using AI.
 
 ## Setup
 
-1. Install `auto-playwright` dependency:
+1. Install the `auto-playwright` dependency:
 
 ```bash
-npm install auto-playwright -D
+pip install auto-playwright
 ```
 
-2. This package relies on talking with OpenAI (https://openai.com/). You must export the API token as an enviroment variable or add it to your `.env` file:
+2. This package relies on talking with OpenAI (https://openai.com/). You must export the API token as an environment variable or add it to your `.env` file:
 
 ```bash
-export OPENAI_API_KEY='sk-..."
+export OPENAI_API_KEY='sk-...'
 ```
 
-3. Import and use the `auto` function:
+3. Import and use the `auto` function in your Playwright tests:
 
-```ts
-import { test, expect } from "@playwright/test";
-import { auto } from "auto-playwright";
+```python
+from playwright.sync_api import Page, expect
+from src.auto_playwright import auto
 
-test("auto Playwright example", async ({ page }) => {
-  await page.goto("/");
+def test_auto_playwright_example(page: Page):
+    page.goto("/")
 
-  // `auto` can query data
-  // In this case, the result is plain-text contents of the header
-  const headerText = await auto("get the header text", { page, test });
+    # `auto` can query data
+    # In this case, the result is the plain-text content of the header
+    header_text = auto("get the header text", {"page": page})
 
-  // `auto` can perform actions
-  // In this case, auto will find and fill in the search text input
-  await auto(`Type "${headerText}" in the search box`, { page, test });
+    # `auto` can perform actions
+    # In this case, auto will find and fill in the search text input
+    auto(f'Type "{header_text}" in the search box', {"page": page})
 
-  // `auto` can assert the state of the website
-  // In this case, the result is a boolean outcome
-  const searchInputHasHeaderText = await auto(
-    `Is the contents of the search box equal to "${headerText}"?`,
-    { page, test },
-  );
+    # `auto` can assert the state of the website
+    # In this case, the result is a boolean outcome
+    search_input_has_header_text = auto(
+        f'Is the contents of the search box equal to "{header_text}"?',
+        {"page": page}
+    )
 
-  expect(searchInputHasHeaderText).toBe(true);
-});
+    assert search_input_has_header_text is True
 ```
 
 ### Setup with Azure OpenAI
 
-Include the StepOptions type with the values needed for connecting to Azure OpenAI.
+Pass the required connection details for Azure OpenAI in the `options` dictionary.
 
-```ts
-import { test, expect } from "@playwright/test";
-import { auto } from "auto-playwright";
-import { StepOptions } from "../src/types";
+```python
+from playwright.sync_api import Page, expect
+from src.auto_playwright import auto
+from src.auto_playwright.types import StepOptions
 
-const apiKey = "apikey";
-const resource = "azure-resource-name";
-const model = "model-deployment-name";
+api_key = "your-api-key"
+resource = "your-azure-resource-name"
+model = "your-model-deployment-name"
 
-const options: StepOptions = {
-  model: model,
-  openaiApiKey: apiKey,
-  openaiBaseUrl: `https://${resource}.openai.azure.com/openai/deployments/${model}`,
-  openaiDefaultQuery: { "api-version": "2023-07-01-preview" },
-  openaiDefaultHeaders: { "api-key": apiKey },
-};
+options: StepOptions = {
+    "model": model,
+    "openai_api_key": api_key,
+    "openai_base_url": f"https://{resource}.openai.azure.com/openai/deployments/{model}",
+    "openai_default_query": {"api-version": "2023-07-01-preview"},
+    "openai_default_headers": {"api-key": api_key},
+}
 
-test("auto Playwright example", async ({ page }) => {
-  await page.goto("/");
+def test_auto_playwright_azure_example(page: Page):
+    page.goto("/")
 
-  // `auto` can query data
-  // In this case, the result is plain-text contents of the header
-  const headerText = await auto("get the header text", { page, test }, options);
+    header_text = auto("get the header text", {"page": page}, options)
 
-  // `auto` can perform actions
-  // In this case, auto will find and fill in the search text input
-  await auto(`Type "${headerText}" in the search box`, { page, test }, options);
+    auto(f'Type "{header_text}" in the search box', {"page": page}, options)
 
-  // `auto` can assert the state of the website
-  // In this case, the result is a boolean outcome
-  const searchInputHasHeaderText = await auto(
-    `Is the contents of the search box equal to "${headerText}"?`,
-    { page, test },
-    options,
-  );
+    search_input_has_header_text = auto(
+        f'Is the contents of the search box equal to "{header_text}"?',
+        {"page": page},
+        options
+    )
 
-  expect(searchInputHasHeaderText).toBe(true);
-});
+    assert search_input_has_header_text is True
 ```
 
 ## Usage
 
-At minimum, the `auto` function requires a _plain text prompt_ and an _argument_ that contains your `page` and `test` (optional) objects.
+At a minimum, the `auto` function requires a plain text prompt and a configuration dictionary containing your `page` object.
 
-```ts
-auto("<your prompt>", { page, test });
+```python
+auto("<your prompt>", {"page": page})
 ```
 
 ### Browser automation
 
-Running without the `test` parameter:
+Running without a test runner like `pytest`:
 
-```ts
-import { chromium } from "playwright";
-import { auto } from "auto-playwright";
+```python
+from playwright.sync_api import sync_playwright
+from src.auto_playwright import auto
 
-(async () => {
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  // Navigate to a website
-  await page.goto("https://www.example.com");
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
+    page = browser.new_page()
+    page.goto("https://www.example.com")
 
-  // `auto` can query data
-  // In this case, the result is plain-text contents of the header
-  const res = await auto("get the header text", { page });
+    # `auto` can query data
+    res = auto("get the header text", {"page": page})
 
-  // use res.query to get a query result.
-  console.log(res);
-  await page.close();
-})();
+    # res['query'] contains the result
+    print(res)
+    browser.close()
 ```
 
 ### Debug
 
-You may pass a `debug` attribute as the third parameter to the `auto` function. This will print the prompt and the commands executed by OpenAI.
+You may pass a `debug` attribute in the `options` dictionary to the `auto` function. This will print the prompt and the commands executed by OpenAI.
 
-```ts
-await auto("get the header text", { page, test }, { debug: true });
+```python
+auto("get the header text", {"page": page}, {"debug": True})
 ```
 
-You may also set environment variable `AUTO_PLAYWRIGHT_DEBUG=true`, which will enable debugging for all `auto` calls.
+You may also set the environment variable `AUTO_PLAYWRIGHT_DEBUG=true`, which will enable debugging for all `auto` calls.
 
 ```bash
 export AUTO_PLAYWRIGHT_DEBUG=true
@@ -141,58 +129,54 @@ Every browser that Playwright supports.
 
 ## Additional Options
 
-There are additional options you can pass as a third argument:
+There are additional options you can pass in the `options` dictionary:
 
-```ts
-const options = {
-  // If true, debugging information is printed in the console.
-  debug: boolean,
-  // The OpenAI model (https://platform.openai.com/docs/models/overview)
-  model: "gpt-4-1106-preview",
-  // The OpenAI API key
-  openaiApiKey: "sk-...",
-};
+```python
+options = {
+  # If true, debugging information is printed in the console.
+  "debug": False,
+  # The OpenAI model (https://platform.openai.com/docs/models/overview)
+  "model": "gpt-4o",
+  # The OpenAI API key
+  "openai_api_key": "sk-...",
+}
 
-auto("<your prompt>", { page, test }, options);
+auto("<your prompt>", {"page": page}, options)
 ```
 
 ## Supported Actions & Return Values
 
-Depending on the `type` of action (inferred by the `auto` function), there are different behaviors and return types.
+Depending on the type of action inferred by the `auto` function, there are different behaviors and return types.
 
 ### Action
 
-An action (e.g. "click") is some simulated user interaction with the page, e.g. a click on a link. Actions will return `undefined`` if they were successful and will throw an error if they failed, e.g.
+An action (e.g., "click") is a simulated user interaction with the page. Actions return `None` if they were successful and will raise an error if they failed.
 
-```ts
-try {
-  await auto("click the link", { page, test });
-} catch (e) {
-  console.error("failed to click the link");
-}
+```python
+try:
+  auto("click the link", {"page": page})
+except Exception as e:
+  print(f"Failed to click the link: {e}")
 ```
 
 ### Query
 
-A query will return requested data from the page as a string, e.g.
+A query will return the requested data from the page as a string.
 
-```ts
-const linkText = await auto("Get the text of the first link", { page, test });
+```python
+link_text = auto("Get the text of the first link", {"page": page})
 
-console.log("The link text is", linkText);
+print(f"The link text is: {link_text}")
 ```
 
 ### Assert
 
-An assertion is a question that will return `true` or `false`, e.g.
+An assertion is a question that will return `True` or `False`.
 
-```ts
-const thereAreThreeLinks = await auto("Are there 3 links on the page?", {
-  page,
-  test,
-});
+```python
+there_are_three_links = auto("Are there 3 links on the page?", {"page": page})
 
-console.log(`"There are 3 links" is a ${thereAreThreeLinks} statement`);
+print(f'"There are 3 links" is a {there_are_three_links} statement')
 ```
 
 ## Why use Auto Playwright?
@@ -213,134 +197,32 @@ console.log(`"There are 3 links" is a ${thereAreThreeLinks} statement`);
 - `locator.click`
 - `locator.count`
 - `locator.fill`
-- `locator.getAttribute`
-- `locator.innerHTML`
-- `locator.innerText`
-- `locator.inputValue`
-- `locator.isChecked`
-- `locator.isEditable`
-- `locator.isEnabled`
-- `locator.isVisible`
-- `locator.pressKey`
-- `locator.selectOption`
-- `locator.textContent`
+- `locator.get_attribute`
+- `locator.inner_html`
+- `locator.inner_text`
+- `locator.input_value`
+- `locator.is_checked`
+- `locator.is_editable`
+- `locator.is_enabled`
+- `locator.is_visible`
+- `locator.press`
+- `locator.select_option`
+- `locator.text_content`
 - `locator.uncheck`
 - `page.goto`
 - `page.keyboard.press`
 
-Adding new actions is easy: just update the `functions` in [`src/completeTask.ts`](src/completeTask.ts).
+Adding new actions is easy: just update the `actions` dictionary in [`src/auto_playwright/create_actions.py`](src/auto_playwright/create_actions.py).
 
 ## Pricing
 
 This library is free. However, there are costs associated with using OpenAI. You can find more information about pricing here: https://openai.com/pricing/.
 
-<details>
-  <summary>Example</summary>
-
-Using https://ray.run/ as an example, the cost of running a test step is approximately $0.01 using GPT-4 Turbo (and $0.001 using GPT-3.5 Turbo).
-
-The low cost is in part because `auto-playwright` uses HTML sanitization to reduce the payload size, e.g. What follows is the payload that would be submitted for https://ray.run/.
-
-Naturally, the price will vary dramatically depending on the payload.
-
-```html
-<div class="cYdhWw dKnOgO geGbZz bGoBgk jkEels">
-  <div class="kSmiQp fPSBzf bnYmbW dXscgu xJzwH jTWvec gzBMzy">
-    <h1 class="fwYeZS fwlORb pdjVK bccLBY fsAQjR fyszFl WNJim fzozfU">
-      Learn Playwright
-    </h1>
-    <h2 class="cakMWc ptfck bBmAxp hSiiri xJzwS gnfYng jTWvec fzozfU">
-      Resources for learning end-to-end testing using Playwright automation
-      framework
-    </h2>
-    <div
-      class="bLTbYS gvHvKe cHEBuD ddgODW jsxhGC kdTEUJ ilCTXp iQHbtH yuxBn ilIXfy gPeiPq ivcdqp isDTsq jyZWmS ivdkBK cERSkX hdAwi ezvbLT jNrAaV jsxhGJ fzozCb"
-    ></div>
-  </div>
-  <div class="cYdhWw dpjphg cqUdSC fasMpP">
-    <a
-      class="gacSWM dCgFix conipm knkqUc bddCnd dTKJOB leOtqz hEzNkW fNBBKe jTWvec fIMbrO fzozfU group"
-      href="/blog"
-      ><div class="plfYl bccLBY hSiiri fNBpvX">Blog</div>
-      <div class="jqqjPD fWDXZB pKTba bBmAxp hSiiri evbPEu">
-        <p>Learn in depth subjects about end-to-end testing.</p>
-      </div></a
-    ><a
-      class="gacSWM dCgFix conipm knkqUc bddCnd dTKJOB leOtqz hEzNkW fNBBKe jTWvec fIMbrO fzozfU group"
-      href="/ask"
-      ><div class="plfYl bccLBY hSiiri fNBpvX">Ask AI</div>
-      <div class="jqqjPD fWDXZB pKTba bBmAxp hSiiri evbPEu">
-        <p>Ask ChatGPT Playwright questions.</p>
-      </div></a
-    ><a
-      class="gacSWM dCgFix conipm knkqUc bddCnd dTKJOB leOtqz hEzNkW fNBBKe jTWvec fIMbrO fzozfU group"
-      href="/tools"
-      ><div class="plfYl bccLBY hSiiri fNBpvX">Dev Tools</div>
-      <div class="jqqjPD fWDXZB pKTba bBmAxp hSiiri evbPEu">
-        <p>All-in-one toolbox for QA engineers.</p>
-      </div></a
-    ><a
-      class="gacSWM dCgFix conipm knkqUc bddCnd dTKJOB leOtqz hEzNkW fNBBKe jTWvec fIMbrO fzozfU group"
-      href="/jobs"
-      ><div class="plfYl bccLBY hSiiri fNBpvX">QA Jobs</div>
-      <div class="jqqjPD fWDXZB pKTba bBmAxp hSiiri evbPEu">
-        <p>Handpicked QA and Automation opportunities.</p>
-      </div></a
-    ><a
-      class="gacSWM dCgFix conipm knkqUc bddCnd dTKJOB leOtqz hEzNkW fNBBKe jTWvec fIMbrO fzozfU group"
-      href="/questions"
-      ><div class="plfYl bccLBY hSiiri fNBpvX">Questions</div>
-      <div class="jqqjPD fWDXZB pKTba bBmAxp hSiiri evbPEu">
-        <p>Ask AI answered questions about Playwright.</p>
-      </div></a
-    ><a
-      class="gacSWM dCgFix conipm knkqUc bddCnd dTKJOB leOtqz hEzNkW fNBBKe jTWvec fIMbrO fzozfU group"
-      href="/discord-forum"
-      ><div class="plfYl bccLBY hSiiri fNBpvX">Discord Forum</div>
-      <div class="jqqjPD fWDXZB pKTba bBmAxp hSiiri evbPEu">
-        <p>Archive of Discord Forum posts about Playwright.</p>
-      </div></a
-    ><a
-      class="gacSWM dCgFix conipm knkqUc bddCnd dTKJOB leOtqz hEzNkW fNBBKe jTWvec fIMbrO fzozfU group"
-      href="/videos"
-      ><div class="plfYl bccLBY hSiiri fNBpvX">Videos</div>
-      <div class="jqqjPD fWDXZB pKTba bBmAxp hSiiri evbPEu">
-        <p>Tutorials, conference talks, and release videos.</p>
-      </div></a
-    ><a
-      class="gacSWM dCgFix conipm knkqUc bddCnd dTKJOB leOtqz hEzNkW fNBBKe jTWvec fIMbrO fzozfU group"
-      href="/browser-extension"
-      ><div class="plfYl bccLBY hSiiri fNBpvX">Browser Extension</div>
-      <div class="jqqjPD fWDXZB pKTba bBmAxp hSiiri evbPEu">
-        <p>GUI for generating Playwright locators.</p>
-      </div></a
-    ><a
-      class="gacSWM dCgFix conipm knkqUc bddCnd dTKJOB leOtqz hEzNkW fNBBKe jTWvec fIMbrO fzozfU group"
-      href="/wiki"
-      ><div class="plfYl bccLBY hSiiri fNBpvX">QA Wiki</div>
-      <div class="jqqjPD fWDXZB pKTba bBmAxp hSiiri evbPEu">
-        <p>Definitions of common end-to-end testing terms.</p>
-      </div></a
-    >
-  </div>
-  <div
-    class="kSmiQp fPSBzf pKTba eTDpsp legDhJ hSiiri hdaZLM jTWvec gzBMzy bGySga fzoybr"
-  >
-    <p class="dXhlDK leOtqz glpWRZ fNCcFz">
-      Use <kbd class="bWhrAL XAzZz cakMWc bUyOMB bmOrOm fyszFl dTmriP">⌘</kbd> +
-      <kbd>k</kbd> + "Tools" to quickly access all tools.
-    </p>
-  </div>
-</div>
-```
-
-</details>
-
 ## Implementation
 
 ### HTML Sanitization
 
-The `auto` function uses [sanitize-html](https://www.npmjs.com/package/sanitize-html) to sanitize the HTML of the page before sending it to OpenAI. This is done to reduce cost and improve the quality of the generated text.
+The `auto` function uses [BeautifulSoup4](https://pypi.org/project/beautifulsoup4/) to sanitize the HTML of the page before sending it to OpenAI. This is done to reduce cost and improve the quality of the generated text.
 
 ## ZeroStep
 
@@ -352,7 +234,7 @@ Here's a side-by-side comparison of Auto Playwright and ZeroStep:
 | ------------------------------------------------------------------------------------- | --------------- | -------- |
 | Uses OpenAI API                                                                       | Yes             | No[^3]   |
 | Uses plain-text prompts                                                               | Yes             | No       |
-| Uses [`functions`](https://www.npmjs.com/package/openai#automated-function-calls) SDK | Yes             | No       |
+| Uses [`functions`](https://platform.openai.com/docs/guides/function-calling) SDK | Yes             | No       |
 | Uses HTML sanitization                                                                | Yes             | No       |
 | Uses Playwright API                                                                   | Yes             | No[^4]   |
 | Uses screenshots                                                                      | No              | Yes      |
@@ -367,20 +249,3 @@ Here's a side-by-side comparison of Auto Playwright and ZeroStep:
 [^3]: Uses ZeroStep proprietary API.
 
 [^4]: Uses _some_ Playwright API, but predominantly relies on Chrome DevTools Protocol (CDP).
-
-<details>
-  <summary>Zero Step License</summary>
-
-```
-MIT License
-
-Copyright (c) 2023 Reflect Software Inc
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-
-</details>
