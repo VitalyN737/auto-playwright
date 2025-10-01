@@ -1,5 +1,5 @@
 from .config import MAX_TASK_CHARS
-from .types import Page, TestInfo, StepOptions, AutoPlaywrightConfig
+from .types import Page, StepOptions, AutoPlaywrightConfig
 from .complete_task import complete_task
 from .errors import UnimplementedError
 from .get_snapshot import get_snapshot

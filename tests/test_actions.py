@@ -1,6 +1,6 @@
 import json
 from playwright.sync_api import Page, expect
-from src.auto_playwright.create_actions import create_actions
+from auto_playwright.create_actions import create_actions
 
 def test_finds_element_using_css_locator(page: Page, test_server):
     page.goto(test_server)

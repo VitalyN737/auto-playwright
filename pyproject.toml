@@ -8,6 +8,7 @@ readme = "README.md"
 homepage = "https://ray.run"
 repository = "https://github.com/lucgagan/auto-playwright"
 keywords = ["openai", "playwright", "test"]
+packages = [{include = "auto_playwright", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"

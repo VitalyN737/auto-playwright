@@ -1,5 +1,6 @@
 from typing import TypedDict, Optional, Any, Dict, List, Literal
-from playwright.sync_api import Page, TestInfo
+from playwright.sync_api import Page
+from typing import TypedDict, Optional, Any, Dict
 
 class StepOptions(TypedDict, total=False):
     model: Optional[str]
@@ -21,6 +22,6 @@ class FunctionResult(TypedDict, total=False):
 
 class AutoPlaywrightConfig(TypedDict):
     page: Page
-    test: Optional[TestInfo]
+    test: Optional[Any]
 
 TaskResult = FunctionResult

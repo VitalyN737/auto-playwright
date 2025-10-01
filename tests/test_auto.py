@@ -1,7 +1,7 @@
 import os
 import pytest
 from playwright.sync_api import Page, expect
-from src.auto_playwright import auto
+from auto_playwright import auto
 
 # To run these tests, you must have an OPENAI_API_KEY environment variable set.
 # You can get a key from https://platform.openai.com/

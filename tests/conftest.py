@@ -1,5 +1,5 @@
 import pytest
-from .server import run_server
+from tests.server import run_server
 import socket
 
 @pytest.fixture(scope="session")
